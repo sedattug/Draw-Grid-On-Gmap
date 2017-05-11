@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title></title>
+    <link href="bootstrap.min.css" rel="stylesheet">
+    <link href="modern-business.css" rel="stylesheet">
+    <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css">
+	<style>
+		#mapbox { width: 100%; height: 100%; }
+		html, body{
+			margin:0px;
+			padding:0px;
+		}
+		.active {
+			background-color: #4CAF50 !important;
+			color:#FFF !important;
+			border-color:#4CAF50 !important;;
+		}
+	</style>
+</head>
+<body>
+	<input type="hidden" id="LatFirst" value="40.890093"></input>
+    <input type="hidden" id="LngFirst" value="27.978058"></input>
+	<input type="hidden" id="Lat" value="40.890093"></input>
+    <input type="hidden" id="Lng" value="27.978058"></input>
+    <input type="hidden" id="Grid"  data-dx="18" data-dy="10" data-total="153" data-km="10000" value=""></input>
+	
+	
+	<div class="btn-group btn-group-md" style="position:absolute; top:10px; right:10px;z-index:1000;">
+	  <button type="button" class="btn btn-default grid" data-dx="36" data-dy="20" data-total="306" data-km="5000">5 Km Grid</button>
+	  <button type="button" class="btn btn-default grid active" data-dx="18" data-dy="10" data-total="153" data-km="10000">10 Km Grid</button>
+	</div>
+	
+	
+	<div id="mapbox"></div>
+    
+	
+    <script src="jquery.js"></script>
+    <script src="bootstrap.min.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&key={YOUR_API_KEY}&libraries=geometry"></script>
+	<script>
+	var rectangle_array = [];
+	function init() { 
+			var map = new google.maps.Map( document.getElementById('mapbox'), {
+				zoom: 10,
+				center: new google.maps.LatLng( 41.136714, 29.029999),
+				mapTypeId: google.maps.MapTypeId.HYBRID,
+				draggable: true
+			});
+			
+			var dx = parseInt($("#Grid").attr("data-dx"));
+			var dy = parseInt($("#Grid").attr("data-dy"));
+			var km = parseInt($("#Grid").attr("data-km"));
+			var total = parseInt($("#Grid").attr("data-total"));
+			//alert("DX : "+ dx +" DY:"+ dy + " KM:" + km);
+			for(var i=1; i<dy; i++){
+				for(var j=1; j<dx; j++){
+					var lat = parseFloat($("#Lat").val());
+					var lng = parseFloat($("#Lng").val());
+					
+					var bounds = makeBounds( new google.maps.LatLng( lat, lng), km, km );
+					var rectangle = new google.maps.Rectangle({
+						map: map,
+						bounds: bounds,
+						strokeColor: '#cdcdcd',
+						strokeOpacity: 0.5,
+						strokeWeight: 0.5,
+						fillColor: '#FFFFFF' , 
+						fillOpacity:0,
+						clickable: true,
+					});
+					rectangle.setMap(map);
+					rectangle_array.push(rectangle);
+					
+					
+					var attr = {
+						'Satır / Sütun': i+" / "+j,
+					};
+					rectangle.objInfo = attr;
+					google.maps.event.addListener(rectangle, 'click', function( event ){
+					  console.log(this.objInfo);					  
+					  for(var k = 0; k < total; k++){
+						rectangle_array[k].setOptions({fillColor: '#FFFFFF' , fillOpacity:0,strokeColor: '#cdcdcd'});
+					  }
+					  this.setOptions({fillColor: '#FF0000' , fillOpacity:0.6,strokeColor: '#000'});
+					}); 
+										
+					var new_lat = lat  + (0 / 6371e3) * (180 / 3.14);
+					var new_lng = lng + (km / 6371e3) * (180 / 3.14) / Math.cos(lat * 3.14/180);
+					$("#Lat").val(new_lat);
+					$("#Lng").val(new_lng);
+				}
+				var lat = parseFloat($("#LatFirst").val());
+				var lng = parseFloat($("#LngFirst").val());
+				var new_lat = lat  + (km / 6371e3) * (180 / 3.14);
+				var new_lng = lng + (0 / 6371e3) * (180 / 3.14) / Math.cos(lat * 3.14/180);
+				$("#Lat, #LatFirst").val(new_lat);
+				$("#Lng, #LngFirst").val(new_lng);
+			}
+			
+		}
+		
+	$(".grid").click(function(){
+		$(".grid").each(function(){
+			$(this).removeClass("active");
+		});
+		$(this).addClass("active");
+		
+		var dx = $(this).attr("data-dx");
+		var dy = $(this).attr("data-dy");
+		var km = $(this).attr("data-km");
+		var total = $(this).attr("data-total");
+		$("#Grid").attr("data-dx", dx);
+		$("#Grid").attr("data-dy", dy);
+		$("#Grid").attr("data-km", km);
+		$("#Grid").attr("data-total", total);
+		$("#Lat, #LatFirst").val("40.890093");
+		$("#Lng, #LngFirst").val("27.978058");
+		rectangle_array = [];
+		init();
+	});
+
+	function makeBounds( nw, metersEast, metersSouth ) {
+		var ne = google.maps.geometry.spherical.computeOffset(
+			nw, metersEast, 90
+		);
+		var sw = google.maps.geometry.spherical.computeOffset(
+			nw, metersSouth, 180
+		);
+		return new google.maps.LatLngBounds( sw, ne );
+	}
+
+	google.maps.event.addDomListener( window, 'load', init );
+	
+	</script>
+</body>
+</html>
